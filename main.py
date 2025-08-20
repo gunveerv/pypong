@@ -18,8 +18,9 @@ class Platform(MoveableObject):
 class Ball(MoveableObject):
     def __init__(self, pos: pygame.Vector2, color: str, radius: int, isDown: bool):
         super().__init__(pos, color, radius)
-    def moveObject(self, isDown: bool, dt: int):
-        self.pos.y += dt * (300 if not isDown else -300)
+        self.isDown = isDown
+    def moveObject(self, dt: int):
+        self.pos.y += dt * (300 if self.isDown else -300)
 
 # pygame setup
 pygame.init()
@@ -31,11 +32,9 @@ clock = pygame.time.Clock()
 running = True
 dt = 0
 
-player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
-
 player = Platform(pygame.Vector2(screen.get_width() / 2, 0), "white", RADIUS)
 opponent = Platform(pygame.Vector2(screen.get_width() / 2, HEIGHT), "white", RADIUS)
-ball = Ball(pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2), "white", RADIUS, True)
+ball = Ball(pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2), "white", RADIUS, False)
 
 while running:
     # poll for events
@@ -51,15 +50,23 @@ while running:
     pygame.draw.circle(screen, "white", opponent.pos, RADIUS)
     pygame.draw.circle(screen, "white", ball.pos, RADIUS)
 
+    # game logic
+    if 0 + RADIUS > ball.pos.y or ball.pos.y > HEIGHT - RADIUS:
+        running = False
+
+    # player movement
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_w]:
-        player_pos.y -= 300 * dt if player_pos.y > 5 + RADIUS else 0
-    if keys[pygame.K_s]:
-        player_pos.y += 300 * dt if player_pos.y < HEIGHT - RADIUS - 5 else 0
-    if keys[pygame.K_a]:
-        player_pos.x -= 300 * dt if player_pos.x > 5 + RADIUS else 0
-    if keys[pygame.K_d]:
-        player_pos.x += 300 * dt if player_pos.x < WIDTH - RADIUS - 5 else 0
+    if (keys[pygame.K_a] or keys[pygame.K_LEFT]) and 0 < player.pos.x:
+        player.moveObject(True, dt)
+    if (keys[pygame.K_d] or keys[pygame.K_RIGHT]) and WIDTH >= player.pos.x:
+        player.moveObject(False, dt)
+
+    # ball physics
+    ball.moveObject(dt)
+    platformPos = opponent.pos if ball.isDown else player.pos
+    distance = ball.pos.distance_to(platformPos)
+    if distance <= (RADIUS*2):
+        ball.isDown = not ball.isDown
 
     # flip() the display to put your work on screen
     pygame.display.flip()
