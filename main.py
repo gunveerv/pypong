@@ -11,9 +11,10 @@ class Platform(MoveableObject):
     def __init__(self, pos: pygame.Vector2, color: str, radius: int):
         super().__init__(pos, color, radius)
         self.score = 0
+        self.dx = 500
 
     def moveObject(self, isLeft: bool, dt: int):
-        self.pos.x += dt * (500 if not isLeft else -500)
+        self.pos.x += (dt * self.dx * (1 if not isLeft else -1))
 
 class Ball(MoveableObject):
     def __init__(self, pos: pygame.Vector2, color: str, radius: int, isDown: bool):
@@ -67,18 +68,36 @@ while running:
         player.moveObject(True, dt)
     if (keys[pygame.K_d] or keys[pygame.K_RIGHT]) and WIDTH - PLATFORM_WIDTH >= player.pos.x:
         player.moveObject(False, dt)
+    if (keys[pygame.K_q]):
+        running = False
+
+    # simple opponent movement
+    diff = opponent.pos.x + (PLATFORM_WIDTH/2) - ball.pos.x
+    isLeft = True if diff > 0 else False
+
+    opponent.dx = abs(diff) % 750
+    opponent.moveObject(isLeft, dt)
+
+
 
     # ball physics
-    ball.moveObject(dt)
     if (((ball.pos.y - RADIUS) <= (PLATFORM_HEIGHT+5) and player.pos.x - 0.75*RADIUS <= ball.pos.x <= player.pos.x+PLATFORM_WIDTH + 0.75*RADIUS)
-        or ((ball.pos.y + RADIUS) >= (HEIGHT-PLATFORM_HEIGHT-5) and opponent.pos.x <= ball.pos.x <= opponent.pos.x+PLATFORM_WIDTH)):
-        platformX = player.pos.x if ball.isDown else opponent.pos.x
+        or ((ball.pos.y + RADIUS) >= (HEIGHT-PLATFORM_HEIGHT-5) and opponent.pos.x - 0.75*RADIUS <= ball.pos.x <= opponent.pos.x+PLATFORM_WIDTH + 0.75*RADIUS)):
+        platformX = opponent.pos.x if ball.isDown else player.pos.x
         # returns a number from -75->75
         # 75/55 is ~1.3, which is 75 degrees to rads
         radsApprox = (abs(platformX - ball.pos.x)-(PLATFORM_WIDTH/2)) / 55
-        ball.dx = math.sin(radsApprox) * 300 * 1 if ball.isDown else -1
-        ball.dy = math.cos(radsApprox) * 300 * 1 if ball.isDown else -1
+        # ball.dx = math.sin(radsApprox) * 300 * (-1 if ball.isDown else 1)
+        ball.dx = math.sin(radsApprox) * 300
+        ball.dy = math.cos(radsApprox) * 300 * (-1 if ball.isDown else 1)
+        # ball.dy = math.cos(radsApprox) * 300
         ball.isDown = not ball.isDown
+        ball.moveObject(dt)
+    elif (0+RADIUS >= ball.pos.x or  ball.pos.x  >= WIDTH-RADIUS):
+        #bounce off of walls
+        ball.dx *= -1
+
+    ball.moveObject(dt)
 
     # flip() the display to put your work on screen
     pygame.display.flip()
