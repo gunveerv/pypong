@@ -39,10 +39,13 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 running = True
 dt = 0
+white=(255,255,255)
 
 player = Platform(pygame.Vector2(screen.get_width() / 2 - PLATFORM_WIDTH/2, 0), "white", RADIUS)
 opponent = Platform(pygame.Vector2(screen.get_width() / 2 - PLATFORM_WIDTH/2, HEIGHT - PLATFORM_HEIGHT), "white", RADIUS)
 ball = Ball(pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2), "white", RADIUS, False)
+
+font=pygame.font.Font(None,40)
 
 while running:
     # poll for events
@@ -59,8 +62,16 @@ while running:
     pygame.draw.circle(screen, "white", ball.pos, RADIUS)
 
     # game logic
-    if 0 + RADIUS > ball.pos.y or ball.pos.y > HEIGHT - RADIUS:
-        running = False
+    if 0 + RADIUS + 1 > ball.pos.y or ball.pos.y > HEIGHT - RADIUS - 1:
+        # running = False
+        if ball.isDown:
+            player.score += 1
+        else:
+            opponent.score += 1
+        ball.pos.x = WIDTH/2
+        ball.pos.y = HEIGHT/2
+        ball.dx = 0
+        ball.dy = 300 if ball.isDown else -300
 
     # player movement
     keys = pygame.key.get_pressed()
@@ -79,10 +90,9 @@ while running:
     opponent.moveObject(isLeft, dt)
 
 
-
     # ball physics
-    if (((ball.pos.y - RADIUS) <= (PLATFORM_HEIGHT+5) and player.pos.x - 0.75*RADIUS <= ball.pos.x <= player.pos.x+PLATFORM_WIDTH + 0.75*RADIUS)
-        or ((ball.pos.y + RADIUS) >= (HEIGHT-PLATFORM_HEIGHT-5) and opponent.pos.x - 0.75*RADIUS <= ball.pos.x <= opponent.pos.x+PLATFORM_WIDTH + 0.75*RADIUS)):
+    if (((ball.pos.y - RADIUS) <= (PLATFORM_HEIGHT+5) and player.pos.x - 0.85*RADIUS <= ball.pos.x <= player.pos.x+PLATFORM_WIDTH + 0.85*RADIUS)
+        or ((ball.pos.y + RADIUS) >= (HEIGHT-PLATFORM_HEIGHT-5) and opponent.pos.x - 0.85*RADIUS <= ball.pos.x <= opponent.pos.x+PLATFORM_WIDTH + 0.85*RADIUS)):
         platformX = opponent.pos.x if ball.isDown else player.pos.x
         # returns a number from -75->75
         # 75/55 is ~1.3, which is 75 degrees to rads
@@ -98,6 +108,15 @@ while running:
         ball.dx *= -1
 
     ball.moveObject(dt)
+
+    player_font = font.render(str(player.score), True, white)
+    opponent_score = font.render(str(opponent.score), True, white)
+
+    screen.blit(player_font, (10, HEIGHT/2-20))
+    screen.blit(opponent_score, (10, HEIGHT/2+20))
+
+    if player.score == 10 or opponent.score == 10:
+        running = False
 
     # flip() the display to put your work on screen
     pygame.display.flip()
